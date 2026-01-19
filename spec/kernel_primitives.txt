@@ -1,0 +1,246 @@
+Minimal Kernel Primitive Set (MKPS)
+=================================
+
+Status: Draft
+Version: 0.1
+Scope: Kernel-level mechanisms required to support intent-oriented execution
+
+
+1. PURPOSE
+----------
+
+This document defines the minimal set of kernel primitives required to
+support intent-oriented execution via semantic personas.
+
+The kernel provides mechanisms only.
+All policy and semantic interpretation are delegated to personas.
+
+
+2. DESIGN CONSTRAINTS
+---------------------
+
+- Primitives MUST be OS-neutral
+- Primitives MUST be composable
+- Primitives MUST be sufficient but minimal
+- No primitive may encode POSIX, NT, or BSD semantics
+- No primitive may assume a syscall ABI
+- All primitives must be capability-checked
+
+
+3. KERNEL RESPONSIBILITY BOUNDARY
+---------------------------------
+
+The kernel is responsible for:
+- Resource arbitration
+- Isolation
+- Scheduling
+- Memory mapping
+- Object lifetime
+- Message routing
+
+The kernel is NOT responsible for:
+- Process semantics (fork vs spawn)
+- File semantics (locking, deletion rules)
+- Path interpretation
+- Error policy
+- User interaction
+
+
+4. PRIMITIVE CATEGORIES
+-----------------------
+
+The kernel primitive set is divided into the following categories:
+
+- Execution primitives
+- Memory primitives
+- Object primitives
+- IPC primitives
+- Filesystem object primitives
+- Time primitives
+- Capability primitives
+
+
+5. EXECUTION PRIMITIVES
+-----------------------
+
+E1. create_execution_context
+    Creates an isolated execution context.
+    No semantic assumptions about process model.
+
+E2. destroy_execution_context
+    Terminates an execution context and releases resources.
+
+E3. bind_execution_context
+    Associates a context with a persona identifier.
+
+E4. schedule_execution_context
+    Schedules execution according to kernel policy.
+
+
+6. MEMORY PRIMITIVES
+--------------------
+
+M1. map_memory_region
+    Maps a virtual memory region.
+
+M2. unmap_memory_region
+    Unmaps a virtual memory region.
+
+M3. protect_memory_region
+    Applies access permissions to a region.
+
+M4. share_memory_region
+    Allows controlled sharing between contexts.
+
+No overcommit, paging, or copy-on-write semantics are implied.
+
+
+7. OBJECT PRIMITIVES
+--------------------
+
+O1. create_object
+    Creates a kernel-managed object.
+
+O2. destroy_object
+    Destroys a kernel-managed object.
+
+O3. reference_object
+    Creates a reference to an object.
+
+O4. release_object
+    Releases an object reference.
+
+Objects are opaque to personas.
+
+
+8. IPC PRIMITIVES
+-----------------
+
+I1. send_message
+    Sends a structured message between contexts.
+
+I2. receive_message
+    Receives a structured message.
+
+I3. reply_message
+    Replies to a message.
+
+I4. multiplex_channel
+    Allows multiplexed communication over a channel.
+
+IPC messages are opaque to the kernel beyond routing and validation.
+
+
+9. FILESYSTEM OBJECT PRIMITIVES
+-------------------------------
+
+F1. open_fs_object
+    Opens a filesystem object by internal identifier.
+
+F2. close_fs_object
+    Closes an object reference.
+
+F3. read_fs_object
+    Reads data from an object.
+
+F4. write_fs_object
+    Writes data to an object.
+
+F5. query_fs_object
+    Retrieves metadata about an object.
+
+The kernel does NOT interpret:
+- filenames
+- paths
+- permissions
+- locking rules
+
+
+10. TIME PRIMITIVES
+-------------------
+
+T1. get_time
+    Returns monotonic and wall-clock time.
+
+T2. sleep
+    Suspends execution for a duration.
+
+No scheduling guarantees are implied.
+
+
+11. CAPABILITY PRIMITIVES
+-------------------------
+
+C1. grant_capability
+    Grants a capability to a context.
+
+C2. revoke_capability
+    Revokes a capability.
+
+C3. check_capability
+    Verifies capability possession.
+
+Capabilities are the sole authorization mechanism.
+
+
+12. ERROR MODEL
+---------------
+
+Kernel primitives return structured status codes only.
+
+The kernel MUST NOT:
+- translate errors into persona semantics
+- retry operations implicitly
+- guess intent
+
+
+13. SECURITY MODEL
+------------------
+
+- All primitives are capability-gated
+- No ambient authority
+- No global namespaces visible to personas
+- Personas act as policy firewalls
+
+
+14. NON-GOALS
+-------------
+
+This primitive set explicitly excludes:
+- fork()
+- execve()
+- CreateProcess()
+- open()
+- read()
+- write()
+- unlink()
+- signals
+- handles
+- file locks
+
+These are persona-level constructs.
+
+
+15. RATIONALE
+-------------
+
+This minimal primitive set is sufficient to express:
+- POSIX-like systems
+- NT-like systems
+- BSD/Mach-like systems
+
+While preventing:
+- semantic leakage
+- policy entanglement
+- kernel bloat
+
+The kernel remains stable while personas evolve.
+
+
+16. OPEN QUESTIONS
+------------------
+
+- Optimal granularity of object primitives
+- Formal verification of primitive sufficiency
+- Performance implications of strict separation
+- Debugging and observability interfaces
