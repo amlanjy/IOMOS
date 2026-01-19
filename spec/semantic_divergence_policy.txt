@@ -1,0 +1,201 @@
+Semantic Divergence Policy (SDP)
+===============================
+
+Status: Draft
+Version: 0.1
+Scope: Rules for handling semantic incompatibilities between OS personas
+
+
+1. PURPOSE
+----------
+
+This document defines how the system handles semantic divergence when
+different OS personas assign incompatible meanings to the same intent.
+
+The goal is correctness and honesty, not maximal compatibility.
+
+
+2. DEFINITIONS
+--------------
+
+Semantic divergence occurs when:
+- An intent has different valid interpretations across personas
+- An operation is permitted in one persona but forbidden in another
+- An operation has different observable effects across personas
+
+Divergence is a property of meaning, not implementation.
+
+
+3. CORE PRINCIPLES
+------------------
+
+P1. No Silent Lies
+    The system MUST NOT silently alter intent meaning to force success.
+
+P2. Persona Integrity
+    Each persona’s semantic rules MUST remain internally consistent.
+
+P3. Explicit Outcomes
+    Divergence MUST result in an explicit, inspectable outcome.
+
+P4. Determinism
+    Given the same intent and context, divergence resolution MUST be deterministic.
+
+P5. Least Astonishment (Within Persona)
+    Behavior must align with the expectations of the active persona.
+
+
+4. DIVERGENCE CLASSIFICATION
+----------------------------
+
+Divergences are classified into the following categories:
+
+D1. Permissive vs Restrictive
+    Example:
+    - POSIX allows deletion of open files
+    - Windows forbids deletion of open files
+
+D2. Behavioral Difference
+    Example:
+    - Different file locking semantics
+    - Different buffering guarantees
+
+D3. Structural Mismatch
+    Example:
+    - Path case sensitivity
+    - Filesystem metadata presence
+
+D4. Unsupported Concept
+    Example:
+    - Signals in NT persona
+    - Mandatory locks in POSIX persona
+
+
+5. RESOLUTION MODES
+-------------------
+
+For any divergence, exactly one resolution mode MUST be selected.
+
+R1. FAIL
+    The intent is rejected with a semantic error.
+    Used when meaning cannot be preserved.
+
+R2. DEGRADE
+    The intent executes with reduced or altered guarantees.
+    Degradation MUST be reported explicitly.
+
+R3. DEFER
+    The intent is postponed until constraints are satisfied.
+    Used for transient conditions only.
+
+R4. EMULATE (RESTRICTED)
+    Persona-level emulation MAY be used only if:
+    - It does not violate persona integrity
+    - It does not require kernel policy changes
+    - It is explicitly declared
+
+Kernel-level emulation is forbidden.
+
+
+6. DEFAULT RESOLUTION RULES
+---------------------------
+
+- Semantic violations default to FAIL
+- Permission violations default to FAIL
+- Resource exhaustion defaults to DEFER
+- Performance-only divergence MAY DEGRADE
+- Structural mismatches default to FAIL
+
+
+7. EXPLICIT DECLARATIONS
+------------------------
+
+Resolution modes MUST be explicitly declared by the persona.
+
+Implicit fallback behavior is forbidden.
+
+Example declaration:
+
+resolution:
+  divergence: open-file-deletion
+  mode: FAIL
+  reason: "NT semantics forbid deletion of open files"
+
+
+8. USER VISIBILITY
+------------------
+
+All divergence outcomes MUST be visible to:
+- the calling persona
+- the intent issuer
+- debugging and audit interfaces
+
+Silencing divergence notifications is forbidden.
+
+
+9. CROSS-PERSONA INTERACTION
+----------------------------
+
+When multiple personas interact with the same object:
+
+- The most restrictive applicable semantic rule applies
+- Conflicts MUST be detected before execution
+- Partial execution is forbidden unless explicitly declared
+
+
+10. SECURITY IMPLICATIONS
+-------------------------
+
+Semantic divergence MUST NOT be exploited to:
+- bypass permission checks
+- escalate capabilities
+- leak information across personas
+
+Security violations override all other resolution modes.
+
+
+11. AUDITABILITY
+----------------
+
+All divergence decisions MUST be:
+- logged
+- reproducible
+- explainable post-facto
+
+Audit logs MUST include:
+- intent IR
+- persona
+- divergence classification
+- resolution mode
+- outcome
+
+
+12. NON-GOALS
+-------------
+
+This policy does NOT aim to:
+- maximize compatibility
+- hide OS differences
+- guarantee successful execution
+- favor any persona
+
+
+13. RATIONALE
+-------------
+
+Many compatibility systems sacrifice correctness for convenience.
+This policy explicitly rejects that approach.
+
+Semantic honesty is a prerequisite for:
+- correctness
+- security
+- debuggability
+- long-term maintainability
+
+
+14. OPEN QUESTIONS
+------------------
+
+- Formal verification of divergence classifications
+- User-configurable policy layers
+- Static detection of divergence-prone intents
